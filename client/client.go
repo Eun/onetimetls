@@ -14,7 +14,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+type Dialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
 type Client struct {
+	Dialer                Dialer
 	Secret                []byte
 	VerifyPeerCertificate func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error
 }
@@ -24,8 +29,7 @@ func (c *Client) Dial(network, address string) (net.Conn, error) {
 }
 
 func (c *Client) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	var d net.Dialer
-	conn, err := d.DialContext(ctx, network, address)
+	conn, err := c.getDialer().DialContext(ctx, network, address)
 	if err != nil {
 		return nil, err
 	}
@@ -41,6 +45,12 @@ func (c *Client) DialContext(ctx context.Context, network, address string) (net.
 	default:
 		return nil, errors.New("invalid proto version")
 	}
+}
+func (c *Client) getDialer() Dialer {
+	if c.Dialer == nil {
+		return &net.Dialer{}
+	}
+	return c.Dialer
 }
 
 func (c *Client) handleProtoV1(conn net.Conn, p *v1.ProtoV1) (net.Conn, error) {
