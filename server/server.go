@@ -40,7 +40,7 @@ type Server struct {
 // Accept waits for and returns the next connection to the listener.
 func (s *Server) Accept() (net.Conn, error) {
 	if s.Certificate == nil {
-		cert, err := MakeCert(s.Timeout)
+		cert, err := MakeCert(time.Duration(24 * time.Hour))
 		if err != nil {
 			return nil, err
 		}
